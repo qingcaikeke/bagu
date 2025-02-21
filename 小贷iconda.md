@@ -1,8 +1,6 @@
 - 对于 NumPy，你应该能够熟练地创建、操作数组，进行基本的数学运算，理解广播机制。
 - 对于 Pandas，你应该能够独立地创建和操作 Series 和 DataFrame，进行简单的数据清洗和处理。
 
-
-
 jupter用一个新的虚拟环境
 
 conda create --name <虚拟环境名称> python=3.8
@@ -29,7 +27,7 @@ conda env create -f environment.yml，创建一个 Conda 环境，环境的配�
 
 3.cd 路径
 
-
+np.arange(9.)这个`9.`是用来表示数字类型的。
 
 # **gpt**
 
