@@ -50,7 +50,7 @@ private static final Singleton instance = new Singleton();
 
 双重检查，懒汉：防止重排序：分配空间，初始化，instance对象指向该地址
 
-```
+```java
 public class Singleton {
     private static volatile Singleton instance; //static，volatile
     private Singleton() {
@@ -340,8 +340,6 @@ structure：当前类文件的结构，可以看到 方法名-入参-返回值�
 
 auto是spring框架的注解，通过byName注入；resource是java本身的注解，通过byType注入
 
-
-
 #### **IOC原理及实现**
 
 **控制**就是对象的创建、初始化、销毁。
@@ -353,47 +351,80 @@ auto是spring框架的注解，通过byName注入；resource是java本身的注�
 **补：**AppConfig标注了@Configuration，表示它是一个配置类，它包含一个component注解
 此外，AppConfig还标注了@ComponentScan，它告诉容器，自动搜索当前类所在的包以及子包，把所有标注为@Component的Bean自动创建出来，并根据@Autowired进行装配。
 
-**bean注入的方式**
+### bean
 
-属性注入，setter方法注入，构造器注入
++	什么是bean：交给容器管理的对象，通过注解或xml标记
+
++ 将类声明bean的注解：@component@controller@Service
+
++ @bean和@component：前者作用于方法，配置类中的方法上加@bean注解，指示spring初始化的时候调用这个方法，把返回对象注册成一个bean
+
+```java
+@Configuration
+public class XXConfiguration {
+    @Bean
+    public XX jsonTemplate() {
+		解析properties，注入属性，返回对象
+        return view;
+    }
+```
+
++ 注入bean的注解：@Autowired 和 @Resource 
+
+  auto是spring框架的注解，默认根据bytype注入，如果一个接口有多个实现类，注入变为byName
+
+  resource是java本身的注解，默认byName
+
++ bean注入的方式
+
+  属性注入，setter方法注入，构造函数注入；推荐使用构造函数注入，保证依赖完整，所有必需依赖在对象创建时就被注入，避免了空指针异常的风险
+
+```java
+构造函数注入
+public UserService(UserRepository userRepository) {
+    this.userRepository = userRepository;
+}
+set方法注入
+@Autowired
+public void setUserRepository(UserRepository userRepository) {
+    this.userRepository = userRepository;
+}
+字段注入
+@Autowired
+private UserRepository userRepository;
+```
 
 **Bean 的注册过程**
 
-容器扫描配置文件或注解，把bean定义加载到容器，根据bean作用域（单例，原型）创建单例并管理其生命周期
+容器扫描配置文件或注解，把bean定义加载到容器，根据bean作用域（单例，原型）创建并管理其生命周期
+
+注册
+
+本质上就是创建对象，然后注册到beanDefinitionRegistry，beanDefenition包括bean的ClassName，还有是否是Singleton、对象的属性和值等
+
+**bean生命周期：**实例化、依赖注入、初始化、销毁等
+
+**bean的循环依赖**
+
+三级缓存，一级保存可使用的bean，二级保存半成品（早期对象），三级保存创建工厂，二级缓存作为循环出口
+
+具体过程 1.创建一个空bean存入一级，2.进行属性赋值，如果发现循环依赖，把当前bean对象提前暴漏（半成品bean），完成初始化后放入二级缓存，
+
+3.继续进行依赖注入，如果发现循环依赖，从二级缓存中获取已经初始化的bean实例
+
+**bean作用域：**单例、原型、会话、请求等，可以考虑使用Map来存储不同作用域的Bean实例。
+
+**怎么实现bean单例**：一个表存已经创建的bean，更新这个表靠类似单例模式，双重验证，判断加过没，加锁，再判断（单例池） 
 
 补：原型：每次请求都会创建一个新的实例，使用完成后立即销毁。
 
 补：clone创建全新的对象，内容相同，地址不同
 
-**如何创建并装配一个bean**
-
-配置类中的方法上加@bean注解，指示spring初始化的时候调用这个方法，把返回对象注册成一个bean
-
-**如何解决bean的循环依赖**
-
-三级缓存，一级保存可使用的bean，二级保存半成品（早期对象），三级保存创建工厂，二级缓存作为循环出口
-
-具体过程 1.创建一个空bean存入一级，2.进行属性赋值，如果发现循环依赖，把当前bean对象提前暴漏，完成初始化后放入二级缓存，
-
-3.继续进行依赖注入，如果发现循环依赖，从二级缓存中获取已经初始化的bean实例
-
-**核心点：**
-
-bean生命周期：实例化、依赖注入、初始化、销毁等
-
-bean作用域：单例、原型、会话、请求等，可以考虑使用Map来存储不同作用域的Bean实例。
-
-属性注入
-
-**怎么实现bean单例**：一个表存已经创建的bean，更新这个表靠类似单例模式，双重验证，判断加过没，加锁，再判断 
-
 **spring bean注入的设计模式**  todo
 
 [Spring 中经典的 9 种设计模式，打死也要记住啊！ - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/114244039#概览)
 
-
-
-#### **AOP**：
+### **AOP**：
 
 底层是动态代理，通过责任链模式管理通知的执行顺序，前置通知，后置通知，环绕通知等
 
@@ -415,7 +446,7 @@ AOP能够将那些与业务无关，**却为业务模块所共同调用的逻辑
 3.调用原本方法，切面类拦截，执行前逻辑，执行原本方法，执行后逻辑
 ```
 
-```
+```java
 @Aspect
 public class LogAspect implements InvocationHandler{
  	private Object target; // 被代理的对象
@@ -428,6 +459,12 @@ public class LogAspect implements InvocationHandler{
 
 补：动态代理的底层是反射
 
+补：@Target(ElementType.METHOD) @Retention(RetentionPolicy.RUNTIME)
+
+自定义注解的两个参数，一个表示注解用在哪，类属性方法
+
+一个表示注解什么阶段可见：仅源文件保留；class文件保留但不会被虚拟机读取；一直保留，运行时可以通过反射获取，aop必须设成runtime
+
 #### jdk和cglib(**AOP实现原理**)
 
 一句话总结：jdk创建的代理对象是一个实现了接口的对象；cglib创建的代理对象是一个类的子类对象
@@ -438,7 +475,7 @@ cglib基于继承实现。它通过字节码技术在运行时创建被代理类
 
 如果目标对象实现了接口，优先考虑使用 JDK 动态代理；如果目标对象是具体类且没有实现接口，则使用 CGLIB 动态代理。
 
-```
+```java
 interface Subject {
     void request();
 }
@@ -470,7 +507,7 @@ public static void main(String[] args) {
 
 
 
-```
+```java
 // 实现MethodInterceptor接口
 class CglibProxyInterceptor implements MethodInterceptor {
     @Override
@@ -538,7 +575,7 @@ spring中大小子事务回滚情况：大事务就是主方法，小/子事务�
 
 自动配置：扫描类路径下的配置和资源，自动创建配置需要的bean
 
-```
+```java
 @Configuration
 @EnableConfigurationProperties(MyStarterProperties.class)
 public class MyServiceAutoConfiguration {
@@ -565,3 +602,11 @@ MVC相关：@Controller@RequestMapping  @PathVariable  @RequestParam  @RequestBo
 `@ConfigurationProperties`
 
 在 Bean 上添加上了这个注解，会读取配置文件中的前缀(application.properties)，自动给 Bean 中的属性注入值。
+
+### SpringCloud
+
+有哪些组件
+
+服务注册（注册中心），服务调用，降级熔断，负载均衡
+
+网关（请求路由，权限，限流）

@@ -51,6 +51,10 @@ git push -u origin main
 
 #### 网易实习相关：
 
+merge合并后的历史记录保留了所有分支的历史，呈现出分叉后再合并的结构。
+
+rebase将当前分支的提交按顺序应用到另一个分支的顶端，这相当于在另一个分支的基础上重新应用当前分支的更改。
+
 ```
 小明和小张同时基于main1开发，小明修改push，merge到main后，main1边为main2；小王完成修改，试图merge，发生冲突，因为小王是基于main1开发的，而远程现在是main2，所以冲突
 这时需要rebase
@@ -139,12 +143,6 @@ cd /tmp -> mkdir mysql -> cd mysql -> docker run -p 3306:3306 --name mysql -v $P
 - 网络相关(netstat ip ifconfig addr ping)
 - 测试相关(测试网络连通性:ping 测试端口连通性:telnet)
 
-ls：list directory contents
-
-ps：Process Status：是一个动态的、实时更新的进程列表，并包含了各种系统资源的使用情况，如 CPU 利用率、内存使用情况等
-
-top：Table Of Processes：是一个静态的进程列表，可以显示更详细的信息，如进程的状态、优先级（类似任务管理器）
-
 vim：文本编辑器，可以在命令行中编辑文本文件
 
 vi+文件：编辑文件
@@ -159,7 +157,51 @@ vi/vim是linux原始的文本编辑器，可以用于创建文件
 
 grep：文件中查正则表达式或字符串
 
-##### linux目录结构
+##### 系统更新与包管理
+
+yum：：安装 httpd 服务：`yum install httpd`。更新系统所有软件包：`yum update`。
+
+##### 文件操作命令
+
+**cd**：用于切换目录。如进入项目目录：`cd /home/user/project`。
+
+**ls**：列出目录内容。查看当前目录下的文件和文件夹：`ls`，以详细信息列出：`ls -l`。
+
+**cp**：复制文件或目录。将`source_file`复制到`destination_file`：`cp source_file destination_file`。
+
+**mv**：移动或重命名文件、目录。移动文件到另一个目录：`mv file /new/directory`。重命名文件：`mv old_name new_name`。
+
+**rm**：删除文件或目录。删除文件：`rm file`。删除目录及其所有内容：`rm -r directory`。
+
+##### 压缩与解压缩
+
+**tar**：用于打包和解包文件。打包目录为`archive.tar`：`tar -cvf archive.tar directory`。解压`archive.tar`到当前目录：`tar -xvf archive.tar`。
+
+**gzip**：压缩和解压缩文件，通常与`tar`命令结合使用。压缩文件：`gzip file`。解压`file.gz`：`gzip -d file.gz`。
+
+**unzip**：用于解压 zip 格式的文件。解压`archive.zip`：`unzip archive.zip`。
+
+##### 进程管理
+
+**ps**：查看系统当前运行的进程的快照，重点在于查看需要查看的进程。查看所有进程：`ps -ef`。查看与当前终端相关的进程：`ps -l`。
+
+Process Status
+
+**top**：**动态**显示系统中各个进程的资源占用情况，按 CPU 使用率、内存使用率等排序，重点在于资源占用情况。
+
+Table Of Processes
+
+**kill**：用于终止进程。根据进程 ID（PID）杀死进程：`kill -9 PID`。
+
+##### 网络命令
+
+**ifconfig**：查看和配置网络接口信息，如 IP 地址、子网掩码等。
+
+**ping**：测试网络连接，检查与目标主机的连通性。`ping www.example.com`。
+
+**netstat**：查看网络连接、路由表、网络接口等信息。查看所有网络连接：`netstat -an`。
+
+#### linux目录结构
 
  [Linux 系统目录结构 | 菜鸟教程 (runoob.com)](https://www.runoob.com/linux/linux-system-contents.html)
 
@@ -180,8 +222,6 @@ grep：文件中查正则表达式或字符串
 若使用：cd /usr/local，则变为[yjy@linux /usr/local]
 
 目录后面是否带/：带着代表目录下的内容，不带代表包括目录本身
-
-cp -r /src/ /dest/：将 `/src` 目录的内容复制到 `/dest` 目录中。
 
 cp -r /src /dest/：dset目录下会多一个src目录，将 `/src` 目录（包括目录本身）复制到 `/dest` 目录中
 

@@ -20,6 +20,8 @@
 
 7.监控和报警： Grafana 
 
+补：高并发写操作常见的优化手段有：1.优化sql 2.变同步写为异步写 3. 合并写请求
+
 **是否考虑安全性，安全性设计有什么**
 
 降级（保证核心服务可用），熔断，限流（防止服务器过载），监控
@@ -27,6 +29,50 @@
 先熔断：一个服务不可用导致大量不可用
 
 后降级：上游调用下游，下游故障，熔断，上游改为调用降级流程
+
+#### 如何避免流量高峰
+
+消息队列削峰，缓存+预热，集群+负载均衡分散请求，限流
+
+#### **四种限流算法**
+
+限流对象：可以限制用户对服务器的访问；可以限单个用户id(有人用脚本一直刷)，可以先每秒通过的用户数，可以拦ip；可以限制接口访问次数
+
+固定窗口：无法应对激增，会出现突刺
+
+滑动窗口：滑动窗口实现较复杂，难以选则合适的滑动单位；
+
+漏桶：服务端以恒定速度处理请求，桶中装请求，新来请求看能否入桶，能就放行；无法应对高峰期，容易造成请求延时或拒绝
+
+令牌桶：拿到令牌就能执行，令牌以恒定速度生成，数目有上限。
+
+令牌桶可以蓄积令牌，所以可以一定程度上应对突发，（当前时间减上一次生成的时间计算生成了多少令牌，再计算桶中有多少令牌，在计算是否大于需要消耗的令牌数，是的话扣除令牌）通过生成速率和消耗速率（限制的是一段时间内平均被调用次数），
+
+ratelimiter源码：有预热和预支令牌机制，**通过限制后面请求的等待时间，来支持一定程度的突发请求(预消费)**通过一个变量记录下一次请求可以获取令牌的起始时间，如果当前请求5个令牌，桶里只有1个，不用等待生成，而是更新下一次请求的允许时间，然后放行）
+
+还要结合阻塞等待机制，计算需要等待多长时间（下一次请求的允许时间减去当前时间（因为预消费）），并挂起等待
+
+![image-20240406112817247](C:\Users\16776\AppData\Roaming\Typora\typora-user-images\image-20240406112817247.png)
+
+第二个请求来的时候，需要等待请求1预消费的1s，然后自己预消费3s（因为要三个令牌），然后第三个请求需要先阻塞等待3s
+
+**MySQL，Redis，Kafka等在高性能、高可用、高并发方面有什么设计**
+
+高性能：快：零拷贝，批量，顺序io，压缩
+
+高可用：集群
+
+高可靠：落盘，副本，收到回ack没ack重发
+
+高并发：
+
+mysql：
+
+redis：
+
+kafka：
+
+
 
 **怎么理解微服务的，他的优缺点**
 
@@ -46,17 +92,70 @@
 
 redis故障恢复好，生态系统成熟
 
-**四种限流算法**
+#### jwt
 
-固定窗口会出现流量突刺；滑动窗口实现较复杂，难以选则合适的滑动单位；漏桶会固定处理请求的速率，无法应对高峰期，容易造成请求延时或拒绝（桶中装请求，新来请求看能否入桶，能就放行）；令牌桶有桶容量可以蓄积令牌，但并不是无上限的，所以可以一定程度上应对突发，（当前时间减上一次生成的时间计算生成了多少令牌，再计算桶中有多少令牌，在计算是否大于需要消耗的令牌数，是的话扣除令牌）通过生成速率和消耗速率（限制的是一段时间内平均被调用次数），
+三部分：header+payload+signature
 
-ratelimiter源码：有预热和预支令牌机制，**通过限制后面请求的等待时间，来支持一定程度的突发请求(预消费)**通过一个变量记录下一次请求可以获取令牌的起始时间，如果当前请求5个令牌，桶里只有1个，不用等待生成，而是更新下一次请求的允许时间，然后放行）
+{(jwt+加密算法)(base64)} . {(用户信息，权限信息，过期时间)(base64)} . {前两部分+密钥 -> 加密算法 = 结果}
 
-还要结合阻塞等待机制，计算需要等待多长时间（下一次请求的允许时间减去当前时间（因为预消费）），并挂起等待
+它只能验证是否被篡改，但是可以被窃取冒充用户(base64近乎明文)，所以要配合https
 
-![image-20240406112817247](C:\Users\16776\AppData\Roaming\Typora\typora-user-images\image-20240406112817247.png)
+#### 高并发登录怎么做
 
-第二个请求来的时候，需要等待请求1预消费的1s，然后自己预消费3s（因为要三个令牌），然后第三个请求需要先阻塞等待3s
+用户登录 - 服务器验证密码 - 生成jwt - 返回 - 用户储存到本地 - 下次访问http带jwt - 服务器验证签名和时间，解析出对象
+
+jwt：三部分：头(token类型(一般就jwt)+加密算法) + 具体内容（一般用户信息）+ 密钥（就一个字符）
+
+把头和内容用base64编码拼上密钥，用算法加密，就得到token了
+
+base64是把二进制转化成明文，3字节2进制，转化成4字节字符；3*8 = 4\*6
+
+创建的时候设个过期时间
+
+用的时候就放http里就行，一般Authorization字段
+
+jwt无状态，被拦截了，可以冒充用户，为了安全最好还是要用https
+
+```
+HMACSHA256(
+  base64UrlEncode(header) + "." +
+  base64UrlEncode(payload),
+  secret)
+```
+
+1.缓存，用户信息存到redis，token当key去缓存查用户信息，减轻数据库负担，或者用jwt的形式，把用户信息编码到token里，然后解密，但是可能不安全
+2.反向代理和负载均衡，确保请求分散到不同的服务器，为了保证缓存命中，根据请求做负载均衡，保证相同请求打到同一服务器上
+3.限流，限制登录次数，如多次密码不正确需要输验证码
+4.异步处理
+5.分布式会话
+
+#### 设计个群聊
+
+消息要双工的（websocket）
+
+消息要广播（消息队列）
+
+要维护群组成员列表（mysql）
+
+消息要存储持久化（mogoDB，es）
+
+消息要有顺序（分布式全局递增id）
+
+**历史消息的优化问题**：滚动分页，瀑布流，预加载，缓存，冷热分离(近几天热)
+
+
+
+#### 接到反馈说某个接口响应慢，怎么排查
+
+？先拆分，分析接口调用过程，数据流转过程，看看各步骤耗时，看是不是数据查耗时，数据处理耗时，看看有没有递归啥的耗时计算。
+
+再看看是不是请求太多挤压之类的
+
+#### 场景题：给定a、b两个文件，各存放50亿个url，每个url各占64字节，内存限制是4G，让你找出a、b文件共同的url
+
+64\*50\*10^8 / 1024 / 1024 /1024 = 30G
+
+分治，每个文件url算哈希%1000，分到1000个里，一个大概300mB
 
 ### mysql
 
@@ -64,8 +163,9 @@ ratelimiter源码：有预热和预支令牌机制，**通过限制后面请求�
 
 **写一条 SQL 语句，在学生表、课程表(ID, TEACHER_ID, TEACHER_NAME, COURSE_ID, COURSE_NAME)、学生_课程表三个表中找出没选"XXX"老师课的学生**
 
-找所有学生not in（根据课程id连接两个表，根据老师名称找到学生id）
+思路：找所有学生not in（根据课程id连接两个表，根据老师名称找到学生id）
 
+```sql
 SELECT DISTINCT s.*
 FROM students s
 WHERE s.student_id NOT IN (
@@ -74,16 +174,42 @@ WHERE s.student_id NOT IN (
     JOIN courses c ON sc.course_id = c.course_id
     WHERE c.teacher_name = 'XXX'
 );
+```
 
-**例：mysql主播表**： 用户id，房间id，开播时间，下播时间，房间开启状态（0、1），日期 第一问：求每个主播每一天的开播时长 第二问：求每个主播一天内每小时的开播时长
+##### 实现乐观锁
+
+```sql
+select stock version where id = 1;
+update table set stock = x-1 ,version = y+1 where id = 1 and version = y;
+```
+
+法2：update字段，类型设为时间戳
+
+```sql
+(DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)
+select xx ；查出时间
+UPDATE product_timestamp
+SET stock = stock - 1
+WHERE id = 1 AND update_time = '2024-01-01 12:00:00'; -- 这里的时间戳是之前查询得到的时间戳
+```
+
+**例**
+
+给你一个sql语句(主键a，联合索引b,c，select a,b,c from table where b = x and c = y and a = z），请问他的索引有没有使用，请你说说他具体是怎么查找的
+
+不一定是主键还是联合，要靠优化器判断
+
+联合索引bc都相同的时候，剩下的内容不一定按主键排序
+
+希望用联合索引，因为不用回表，主键虽然唯一且非空，但要返回整行数据，如果字段很多，开销很大
+
+优化：force 强制使用联合索引
+
+补：select如果走了主键或是回表，引擎返回整行数据，服务器选择需要的字段
 
 #### **牛客sql题**
 
 [牛客网在线编程_SQL篇_非技术快速入门 (nowcoder.com)](https://www.nowcoder.com/exam/oj?page=1&tab=SQL篇&topicId=199)
-
-常考：用了group by和order by，count函数，秒
-
-
 
 15:gpa在3.5以上的山东大学或gpa在3.8以上的复旦大学,两个条件查询,union
 
@@ -148,7 +274,7 @@ order by question_id
 **sql执行顺序**  FROM - ON - JOIN - **WHERE** - GROUP BY（开始使用select中的别名，后面都可以使用）avg/sum - WITH - **HAVING** - **SELECT** - DISTINCT - ORDER BY - LIMIT
 
 1. from(包括from中的子语句)
-2. join 如果from后面是多张表，join关联，会首先对前两个表执行一个笛卡尔乘积，这时候就会生成第一个虚拟表T1（注意：这里会选择相对小的表作为基础表）；
+2. join 如果from后面是多张表，join关联，会首先对前两个表执行一个**笛卡尔乘积**，这时候就会生成第一个虚拟表T1（注意：这里会选择相对小的表作为基础表）；
 3. on 对虚表T1进行on筛选，得到虚表T2，如果还有第三、第四个表将重复此过程。
 4. where 对虚表T2进行where条件过滤，得到T3
 5. group by 将T3中的唯一的值组合成为一组，得到虚拟表T4。如果应用了group by，那么后面的所有步骤都只能操作T4的列或者是执行聚合函数（count、sum、avg等）。
@@ -161,20 +287,19 @@ order by question_id
 
 #### 子查询
 
-```
+```sql
 select device_id, question_id, result
 from question_practice_detail
 where device_id in (
-  ``select device_id from user_profile
-  ``where university=``'浙江大学'
+  select device_id from user_profile
+  where university='浙江大学'
 )
 order by question_id
 ```
 
 #### 连接查询
 
-```
-
+```sql
 select university,
 count(question_id)/count(distinct(q.device_id)) 
 from question_practice_detail q
@@ -185,7 +310,7 @@ order by university asc
 
 #### 组合查询
 
-```
+```sql
 select device_id,gender,age,gpa from
 user_profile
 where university = '山东大学' 
@@ -213,7 +338,7 @@ dense rank：1，2，2，3
 
 加partition：123123，即分区内独立排序
 
-```
+```sql
 取score前三名的学生，有并列的就都取出来
 SELECT student_id, score
 FROM (
@@ -228,7 +353,7 @@ FROM (
 WHERE ranking <= 3;
 ```
 
-```
+```sql
 关联3张表的结果，差ranking和play_pv字段，分组，开窗，然后统计
 select month,ranking,song_name,play_pv
 from(
