@@ -240,3 +240,36 @@ URI（identifier）包括URL（locator）和URN（name，如uuid）
 sha256，md5：加密算法
 
 字节：生活服务不行
+
+middleware：中间件
+
+OLAP：Online Analytical Processing，在线分析处理
+
+Serverless：无服务器架构
+
+fass：Function as a Service，函数即服务
+
+iass：Infrastructure-as-a-service，基础设施服务
+
+pass：Platform-as-a-service，平台服务
+
+sass：Software-as-a-service，应用即服务，软件的开发、管理、部署都交给第三方，不需要关心技术问题，可以拿来即用
+
+ETL：Extract-Transform-Load，抽取转换加载
+
+AGI：通用人工智能，Artificial General Intelligence。不是解决某一个问题，而是尽可能类人，跨领域学习、推理和解决问题，也是人工智能的终极目标
+
+Agent：能持续自主地发挥作用，强调主动性
+
+##### 广告相关
+
+广告主：
+
+选品推荐：给哪个商品投放广告
+
+竞价关键词推荐：用户搜索某些关键词，算法捕捉到和广告主相似，触发广告主竞价
+
+bidding：竞价
+
+诊断：找出投放效果不佳的原因，关键词选择不当、出价不合理、广告素材吸引力不足、目标受众定位不准确等
+

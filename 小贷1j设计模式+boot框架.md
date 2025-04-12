@@ -70,6 +70,44 @@ public class Singleton {
 }
 ```
 
+##### 工厂手撕
+
+简单工厂：根据传入的类型参数创建不同的产品对象，不符合开闭原则
+
+工厂方法：
+
+抽象工厂：创建一系列相关或相互依赖对象
+
+```java
+interface Factory {
+    Product createProduct();
+}
+class ConcreteFactoryA implements Factory {
+    @Override
+    public Product createProduct() {
+        return new ConcreteProductA();
+    }
+}
+class ConcreteFactoryB implements Factory {
+    @Override
+    public Product createProduct() {
+        return new ConcreteProductB();
+    }
+}
+main
+    Factory factoryA = new ConcreteFactoryA();
+    Product productA = factoryA.createProduct();
+```
+
+```java
+interface AnimalFactory ->> 
+    class CatFactory implements AnimalFactory  //将创建过程延迟到子类
+AnimalFactory animalFactory = new CatFactory();
+Animal cat = animalFactory.createAnimal();
+```
+
+
+
 #### 真题：
 
 常见的设计模式：按创建，结构，行为型来回答
@@ -185,17 +223,39 @@ public void notifyMessage(User user, String content, int notifyType) {
 }
 ```
 
-**模板方法**：父类定义一个操作的框架，具体的一些步骤等待子类实现，使得子类可以在不改变算法结构的情况下重新定义算法的某些步骤。
+**模板方法**：父类定义一个操作的框架，包含一系列有顺序的执行步骤，具体的一些步骤等待子类实现，使得子类可以在不改变算法结构的情况下重新定义算法的某些步骤的具体实现。
+
+模板方法不涉及对象的创建，是假设对象已经创建好了，然后调用其行为就能得到具体的东西
+
+```java
+abstract class Beverage {
+    final void prepareRecipe() {
+        boilWater();
+        brew();
+        pourInCup();
+        if (customerWantsCondiments()) {
+            addCondiments();
+        }
+    }
+    // 抽象方法，由子类实现具体的冲泡方式
+    abstract void brew();
+    // 抽象方法，由子类实现具体的添加调料方式
+    abstract void addCondiments();
+}
+class Coffee extends Beverage {}
+class Tea extends Beverage {}
+Main：
+Beverage coffee = new Coffee();
+coffee.prepareRecipe();
+```
 
 **责任链模式**：将很多对象由每一个对象对其下一家的引用连接起来形成一条链
-
-责任链和策略相比是互斥的，过滤一个再过滤下一个，如果中间某一个返回了，就不需要再走后面的了（也可以一直走，代表完成所有流程）
 
 责任链模式：一堆handler，每个负责处理不同的请求，有指向下一个请求的指针，并不在自己的处理范围内，就找下一个handler
 
 spring中：HandlerInterceptor拿到所有的Interceptor[]，然后for循环依次调用preHandle
 
-```
+```java
 public abstract class ApprovalHandler {
 	protected ApprovalHandler next;//下一个对象
 	public abstract void approval(ApprovalContext approvalContext);//调用本对象处理
@@ -213,7 +273,33 @@ public abstract class ApprovalHandler {
 
 主题接口（addObserver，notifyObserver（遍历list，调用update））观察者接口（update）
 
-### Mabatis
+#### 补：
+
+##### 策略和责任链对比
+
+策略侧重算法的封装和切换，根据参数选择算法执行
+
+责任链主要关注请求的传递和处理流程，一个人处理后传给下一个人，下一个人在处理
+
+#### Spring中的设计模式
+
+工厂模式：beanFactory创建bean对象
+
+单例模式：单例bean
+
+代理模式：aop
+
+模板方法：template -> JdbcTemplate
+
+责任链：前置通知，后置通知
+
+补：
+
+```Java
+private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
+```
+
+
 
 #### **MaBatis中的设计模式**
 
@@ -237,7 +323,7 @@ public abstract class ApprovalHandler {
 
 手撕观察者：
 
-```
+```java
 // 主题接口
 interface Subject {
     void addObserver(Observer observer);
