@@ -173,9 +173,15 @@ HMACSHA256(
 
 计算最长持续时间和最大人数
 
+#### **超大文件有限内存，找top100**
 
+mapreduce的思路
 
+1g文件哈希到1024个1mb，分别统计每个1mb中的词和次数，再合并，排序取top100
 
+如果还是不够大，key太多了，就结合堆的思路，建个小顶堆，
+
+然后一次统计一部分的词，数目比堆顶大的，放到堆里；然后再统计下一部分，最后堆里剩的就是top；
 
 ### mysql
 
@@ -242,10 +248,6 @@ where ranking <= 2
 优化：force 强制使用联合索引
 
 补：select如果走了主键或是回表，引擎返回整行数据，服务器选择需要的字段
-
-
-
-
 
 #### **牛客sql题**
 
@@ -499,7 +501,7 @@ ORDER BY
 
 #### mysql如何实现如果不存在就插入如果存在就更新？
 
-```
+```sql
 INSERT INTO users (id, name) VALUES (1, 'Alice')
 	ON DUPLICATE KEY UPDATE name = VALUES(name);
 ```

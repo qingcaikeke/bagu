@@ -357,6 +357,13 @@ autocomplete_sentence(lowercase+sentence_edge_ngram) + reb_eng , keyword
 
 IK分词器：默认的分词器是把每个字看成一个词，这显然有问题，把中文内容划分成关键字。ik分词器提供两个分词算法（analyzer：ik_smart粗粒度分词，ik_max_word细粒度）可以从配置文件编辑自定义词库
 
+补：
+
+Langchain 中文本分割器都根据 `chunk_size` (块大小)和 `chunk_overlap` (块与块之间的重叠大小)进行分割
+
+- chunk_size 指每个块包含的字符或 Token（如单词、句子等）的数量
+- chunk_overlap 指两个块之间共享的字符数量，用于保持上下文的连贯性，避免分割丢失上下文信息
+
 #### 为什么kol和media不用嵌套文档，而用父子文档
 
 为什么不选nested文档(嵌套文档)：
